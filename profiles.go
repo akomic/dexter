@@ -19,6 +19,10 @@ type Profile struct {
 }
 
 func listProfiles(profilesPath string, private bool) []Profile {
+	return listProfilesFiltered(profilesPath, private, false)
+}
+
+func listProfilesFiltered(profilesPath string, private bool, dirsOnly bool) []Profile {
 	var profiles []Profile
 	var dirs []Profile
 
@@ -40,7 +44,7 @@ func listProfiles(profilesPath string, private bool) []Profile {
 					IsPrivate: dirIsPrivate,
 				})
 			}
-		} else if !strings.HasSuffix(entry.Name(), "~") && hasAWSProfile(fullPath) {
+		} else if !dirsOnly && !strings.HasSuffix(entry.Name(), "~") && hasAWSProfile(fullPath) {
 			parentIsPrivate := hasPrivateMarker(profilesPath)
 			if (private && parentIsPrivate) || (!private && !parentIsPrivate) {
 				profiles = append(profiles, Profile{
@@ -89,6 +93,8 @@ func loadProfile(root, profile string, private bool) {
 			} else {
 				loadProfileFile(selected.Path)
 			}
+		} else {
+			fmt.Fprintf(os.Stderr, "Profile number %d not found\n", num)
 		}
 		return
 	}
@@ -100,6 +106,8 @@ func loadProfile(root, profile string, private bool) {
 		} else {
 			loadProfileFile(profilePath)
 		}
+	} else {
+		fmt.Fprintf(os.Stderr, "Profile '%s' not found\n", profile)
 	}
 }
 

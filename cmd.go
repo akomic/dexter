@@ -10,7 +10,7 @@ import (
 
 var (
 	privateFlag     bool
-	groupFlag       string
+	groupFlag       bool
 	namespaceFlag   bool
 	awsArg          string
 	profilesRoot    string
@@ -38,9 +38,13 @@ var rootCmd = &cobra.Command{
 			return
 		}
 
-		// Handle -g flag
-		if groupFlag != "" {
-			chooseProfile(filepath.Join(profilesRoot, groupFlag), true)
+		// Handle -g flag with optional group argument
+		if groupFlag {
+			if len(args) == 1 {
+				chooseProfile(filepath.Join(profilesRoot, args[0]), false)
+			} else {
+				chooseProfileFiltered(profilesRoot, false, true)
+			}
 			return
 		}
 
@@ -78,7 +82,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.Flags().BoolVarP(&privateFlag, "private", "p", false, "Show private profiles (optional: provide profile name as argument)")
-	rootCmd.Flags().StringVarP(&groupFlag, "group", "g", "", "Navigate to profile group")
+	rootCmd.Flags().BoolVarP(&groupFlag, "group", "g", false, "Show non-private groups (optional: provide group name as argument)")
 	rootCmd.Flags().BoolVarP(&namespaceFlag, "namespace", "n", false, "Set Kubernetes namespace (optional: provide namespace as argument)")
 	rootCmd.Flags().StringVarP(&awsArg, "aws", "a", "", "Set AWS profile directly")
 	rootCmd.Flags().BoolVar(&listAWS, "list-aws", false, "List and select AWS profile")

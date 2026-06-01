@@ -11,7 +11,11 @@ import (
 )
 
 func chooseProfile(profilesPath string, private bool) {
-	profiles := listProfiles(profilesPath, private)
+	chooseProfileFiltered(profilesPath, private, false)
+}
+
+func chooseProfileFiltered(profilesPath string, private bool, dirsOnly bool) {
+	profiles := listProfilesFiltered(profilesPath, private, dirsOnly)
 	if len(profiles) == 0 {
 		fmt.Println("No profiles found")
 		return
@@ -208,10 +212,16 @@ func selectAWSProfile() {
 func viewProfileFile(path string) {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		fmt.Printf("Error reading file: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
 		return
 	}
-	fmt.Println("\n" + string(content))
-	fmt.Println("\nPress Enter to continue...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	fmt.Fprintf(os.Stderr, "\n%s\n", string(content))
+	fmt.Fprintf(os.Stderr, "\nPress Enter to continue...")
+	
+	tty, err := os.Open("/dev/tty")
+	if err != nil {
+		return
+	}
+	defer tty.Close()
+	bufio.NewReader(tty).ReadBytes('\n')
 }
