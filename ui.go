@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -70,6 +71,7 @@ type profileModel struct {
 	view     bool
 	private  bool
 	path     string
+	numBuf   string
 }
 
 func (m profileModel) Init() tea.Cmd {
@@ -79,7 +81,8 @@ func (m profileModel) Init() tea.Cmd {
 func (m profileModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
+		key := msg.String()
+		switch key {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "up", "k":
@@ -96,6 +99,26 @@ func (m profileModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter", " ":
 			m.selected = true
 			return m, tea.Quit
+		default:
+			if idx, err := strconv.Atoi(m.numBuf + key); err == nil {
+				m.numBuf += key
+				if idx >= 1 && idx <= len(m.choices) {
+					// If no more items possible with this prefix, select immediately
+					if idx*10 > len(m.choices) {
+						m.cursor = idx - 1
+						m.selected = true
+						return m, tea.Quit
+					}
+				}
+			} else if m.numBuf != "" {
+				// Previous buffer was valid, try just the buffer
+				if idx, err := strconv.Atoi(m.numBuf); err == nil && idx >= 1 && idx <= len(m.choices) {
+					m.cursor = idx - 1
+					m.selected = true
+					return m, tea.Quit
+				}
+				m.numBuf = ""
+			}
 		}
 	}
 	return m, nil
@@ -108,9 +131,9 @@ func (m profileModel) View() string {
 		if m.cursor == i {
 			cursor = ">"
 		}
-		s += fmt.Sprintf("%s %s\n", cursor, choice)
+		s += fmt.Sprintf("%s %2d) %s\n", cursor, i+1, choice)
 	}
-	s += "\nPress v to view, Enter to select, q to quit.\n"
+	s += "\nPress v to view, Enter to select, number to jump, q to quit.\n"
 	return s
 }
 
@@ -158,6 +181,7 @@ type namespaceModel struct {
 	choices  []string
 	cursor   int
 	selected bool
+	numBuf   string
 }
 
 func (m namespaceModel) Init() tea.Cmd {
@@ -167,7 +191,8 @@ func (m namespaceModel) Init() tea.Cmd {
 func (m namespaceModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
+		key := msg.String()
+		switch key {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "up", "k":
@@ -181,6 +206,24 @@ func (m namespaceModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter", " ":
 			m.selected = true
 			return m, tea.Quit
+		default:
+			if idx, err := strconv.Atoi(m.numBuf + key); err == nil {
+				m.numBuf += key
+				if idx >= 1 && idx <= len(m.choices) {
+					if idx*10 > len(m.choices) {
+						m.cursor = idx - 1
+						m.selected = true
+						return m, tea.Quit
+					}
+				}
+			} else if m.numBuf != "" {
+				if idx, err := strconv.Atoi(m.numBuf); err == nil && idx >= 1 && idx <= len(m.choices) {
+					m.cursor = idx - 1
+					m.selected = true
+					return m, tea.Quit
+				}
+				m.numBuf = ""
+			}
 		}
 	}
 	return m, nil
@@ -193,9 +236,9 @@ func (m namespaceModel) View() string {
 		if m.cursor == i {
 			cursor = ">"
 		}
-		s += fmt.Sprintf("%s %s\n", cursor, choice)
+		s += fmt.Sprintf("%s %2d) %s\n", cursor, i+1, choice)
 	}
-	s += "\nPress q to quit.\n"
+	s += "\nPress number to select, Enter to confirm, q to quit.\n"
 	return s
 }
 
